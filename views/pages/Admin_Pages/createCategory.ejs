@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Category</title>
+    <style>
+        /* Global styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f0f0, #d9d9d9);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .parentContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .form-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 450px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .form-container:hover {
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Form label styles */
+        form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 16px;
+        }
+
+        /* Form input styles */
+        form input[type="text"],
+        form input[type="number"],
+        form textarea {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #f9f9f9;
+            color: #555;
+            transition: all 0.3s ease-in-out;
+        }
+
+        form input[type="text"]:focus,
+        form input[type="number"]:focus,
+        form textarea:focus {
+            border-color: #4CAF50;
+            background-color: #f0fff0;
+            outline: none;
+        }
+
+        /* Checkbox styling */
+        form input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        /* Button styles */
+        button {
+            width: 100%;
+            padding: 14px 20px;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #17a2b8;
+        }
+
+        /* Responsive styles for smaller devices */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 25px;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            button {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="parentContainer">
+        <div class="form-container">
+            <h2>Create Category</h2>
+            <form id="categoryForm" action="/admin/categories/create" method="POST">
+                <label for="category">Category</label>
+                <input type="text" id="category" name="category" placeholder="Enter the category" required>
+
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="4" placeholder="Enter the description" required></textarea>
+
+                <label for="src">SRC</label>
+                <input type="text" id="src" name="src" placeholder="Enter SRC" required>
+
+                <label for="price">Price</label>
+                <input type="number" id="price" name="price" step="0.01" placeholder="Enter the price" required>
+
+                <label for="In_Stock">
+                    <input type="checkbox" id="In_Stock" name="In_Stock">
+                    In Stock
+                </label>
+
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

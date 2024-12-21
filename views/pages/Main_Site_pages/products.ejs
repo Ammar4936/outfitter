@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - Outfitters</title>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .products-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .filters-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .products-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .product-card {
+            flex: 0 0 calc(33.333% - 20px);
+            min-width: 280px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-image {
+            position: relative;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.1);
+        }
+
+        .product-badges {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+
+        .badge.featured {
+            background: rgba(241, 196, 15, 0.9);
+            color: #2c3e50;
+        }
+
+        .badge.out-of-stock {
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            font-size: 1.4em;
+            color: #2ecc71;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .product-category {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .add-to-cart {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-to-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .no-products {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .product-card {
+                flex: 0 0 calc(50% - 15px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .product-card {
+                flex: 0 0 100%;
+            }
+        }
+
+        .page-header {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3)), url('/images/shop-banner.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .page-header h1 {
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .filters-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin: -100px auto 50px;
+            max-width: 1000px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            border: 2px solid #eee;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.1);
+        }
+
+        .product-card {
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .product-image {
+            height: 300px;
+        }
+
+        .product-image img {
+            object-fit: contain;
+        }
+
+        .product-info {
+            padding: 25px;
+        }
+
+        .product-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .product-price {
+            font-size: 1.5em;
+            color: #2ecc71;
+            margin: 15px 0;
+        }
+
+        .add-to-cart {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            padding: 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .add-to-cart:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .badge {
+            padding: 8px 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .no-products {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .no-products i {
+            font-size: 3em;
+            color: #95a5a6;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <div>
+            <h1>Our Products</h1>
+            <p>Discover our latest collection</p>
+        </div>
+    </div>
+
+    <div class="products-container">
+        <div class="filters-section">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" id="searchInput" placeholder="Search products...">
+                </div>
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <% categories.forEach(category => { %>
+                            <option value="<%= category.name %>"><%= category.name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Sort By</label>
+                    <select id="sortBy">
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <% if (products.length === 0) { %>
+            <div class="no-products">
+                <i class="fas fa-box-open"></i>
+                <h2>No Products Found</h2>
+                <p>We couldn't find any products matching your criteria.</p>
+            </div>
+        <% } else { %>
+            <div class="products-grid">
+                <% products.forEach(product => { %>
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/<%= product.imageSrc %>" alt="<%= product.title %>">
+                            <div class="product-badges">
+                                <% if (product.isFeatured) { %>
+                                    <span class="badge featured">Featured</span>
+                                <% } %>
+                                <% if (product.stock <= 0) { %>
+                                    <span class="badge out-of-stock">Out of Stock</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title"><%= product.title %></h3>
+                            <div class="product-category">
+                                <i class="fas fa-tag"></i> <%= product.category %>
+                            </div>
+                            <div class="product-price">
+                                PKR <%= product.price.toLocaleString() %>
+                            </div>
+                            <button class="add-to-cart" <%= product.stock <= 0 ? 'disabled' : '' %>>
+                                <i class="fas fa-shopping-cart"></i> 
+                                <%= product.stock <= 0 ? 'Out of Stock' : 'Add to Cart' %>
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Include Footer -->
+    <%- include('../partials/footer') %>
+
+    <script>
+        // Add your filter functionality here
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortBy = document.getElementById('sortBy');
+
+        function applyFilters() {
+            const searchQuery = searchInput.value;
+            const category = categoryFilter.value;
+            const sort = sortBy.value;
+
+            fetch(`/api/products/filter?search=${searchQuery}&category=${category}&sort=${sort}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateProductsGrid(data);
+                });
+        }
+
+        // Add event listeners
+        searchInput.addEventListener('input', debounce(applyFilters, 300));
+        categoryFilter.addEventListener('change', applyFilters);
+        sortBy.addEventListener('change', applyFilters);
+
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Enhanced updateProductsGrid function
+        function updateProductsGrid(products) {
+            const grid = document.getElementById('productsGrid');
+            if (products.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-products">
+                        <i class="fas fa-box-open"></i>
+                        <h2>No Products Found</h2>
+                        <p>We couldn't find any products matching your criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="/${product.imageSrc}" alt="${product.title}">
+                        <div class="product-badges">
+                            ${product.isFeatured ? '<span class="badge featured">Featured</span>' : ''}
+                            ${product.stock <= 0 ? '<span class="badge out-of-stock">Out of Stock</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-title">${product.title}</h3>
+                        <div class="product-category">
+                            <i class="fas fa-tag"></i> ${product.category}
+                        </div>
+                        <div class="product-price">
+                            PKR ${product.price.toLocaleString()}
+                        </div>
+                        <button class="add-to-cart" ${product.stock <= 0 ? 'disabled' : ''}>
+                            <i class="fas fa-shopping-cart"></i> 
+                            ${product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html> 

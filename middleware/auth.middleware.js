@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = '223e8552ee65bc3611f5c0d25b27271899c8855186b8f3e81c6381e838e87a75';
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
@@ -49,9 +49,8 @@ const createToken = (userId) => {
 // Helper function to set token cookie
 const setTokenCookie = (res, token) => {
     res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        sameSite: 'Lax'
     });
 };
 

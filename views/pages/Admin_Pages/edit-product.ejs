@@ -1,0 +1,97 @@
+<!-- Similar to create.ejs but with pre-filled values -->
+<div class="edit-product-container">
+    <div class="form-header">
+        <h2>Edit Product</h2>
+    </div>
+
+    <form action="/admin/products/edit/<%= product._id %>" method="POST" enctype="multipart/form-data">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="title">Product Title</label>
+                <input type="text" id="title" name="title" value="<%= product.title %>" required>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price (PKR)</label>
+                <input type="number" id="price" name="price" value="<%= product.price %>" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <% categories.forEach(category => { %>
+                        <option value="<%= category.name %>" 
+                            <%= category.name === product.category ? 'selected' : '' %>>
+                            <%= category.name %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="stock">Stock Level</label>
+                <input type="number" id="stock" name="stock" value="<%= product.stock %>" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="image">Product Image</label>
+                <input type="file" id="image" name="image" accept="image/*">
+                <% if (product.imageSrc) { %>
+                    <div class="current-image">
+                        <img src="/<%= product.imageSrc %>" alt="Current Image">
+                        <p>Current Image</p>
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="4" required><%= product.description %></textarea>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="isFeatured" <%= product.isFeatured ? 'checked' : '' %>>
+                    Featured Product
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/admin/products" class="cancel-btn">Cancel</a>
+            <button type="submit" class="submit-btn">Update Product</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .edit-product-container {
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .current-image {
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .current-image img {
+        max-width: 200px;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+
+    /* Add your existing form styles */
+</style> 

@@ -1,146 +1,214 @@
 const express = require("express");
 const multer = require("multer");
-let router = express.Router();
-const Admin = require("../../models/admin.models");
+const router = express.Router();
 const Product = require("../../models/products.models");
 const Category = require("../../models/categories.models");
-
-// Authentication middleware
-const authenticateAdmin = async (req, res, next) => {
-    if (!req.session.adminId) {
-        return res.redirect('/admin/login');
-    }
-    next();
-};
+const { requireAdmin } = require('../../middleware/adminAuth.middleware');
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Specify upload folder
+        cb(null, 'uploads/'); // Make sure this directory exists
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Unique filename
+        cb(null, Date.now() + '-' + file.originalname);
     }
 });
 const upload = multer({ storage });
 
-// Login/Register routes
-router.get("/admin/register", (req, res) => {
-    res.render("pages/Admin_Pages/register", { layout: false });
-});
-
-router.post("/admin/register", async (req, res) => {
+// Product Routes
+router.get("/admin/products", requireAdmin, async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const admin = new Admin({ username, password });
-        await admin.save();
-        res.redirect("/admin/login");
-    } catch (error) {
-        res.render("pages/Admin_Pages/register", { 
-            layout: false,
-            error: "Registration failed. Username might be taken."
-        });
-    }
-});
+        const searchQuery = req.query.search || '';
+        const sortBy = req.query.sortBy || 'createdAt';
+        const filter = req.query.filter || 'all';
+        const categoryFilter = req.query.category || '';
 
-router.get("/admin/login", (req, res) => {
-    res.render("pages/Admin_Pages/login", { layout: false });
-});
-
-router.post("/admin/login", async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const admin = await Admin.findOne({ username });
-        
-        if (!admin || !(await admin.comparePassword(password))) {
-            return res.render("pages/Admin_Pages/login", { 
-                layout: false,
-                error: "Invalid username or password"
-            });
+        let query = {};
+        if (searchQuery) {
+            query = {
+                $or: [
+                    { title: { $regex: searchQuery, $options: 'i' } },
+                    { description: { $regex: searchQuery, $options: 'i' } }
+                ]
+            };
         }
 
-        req.session.adminId = admin._id;
-        res.redirect("/admin/dashboard");
-    } catch (error) {
-        res.render("pages/Admin_Pages/login", { 
-            layout: false,
-            error: "Login failed"
+        if (categoryFilter) {
+            query.category = categoryFilter;
+        }
+
+        if (filter === 'featured') {
+            query.isFeatured = true;
+        } else if (filter === 'low-stock') {
+            query.stock = { $lte: 10 };
+        }
+
+        const products = await Product.find(query)
+            .sort(sortBy === 'price' ? { price: 1 } : { createdAt: -1 });
+        const categories = await Category.find();
+
+        res.render("pages/Admin_Pages/products", { 
+            layout: "admin-layout",
+            products,
+            categories,
+            searchQuery,
+            sortBy,
+            filter,
+            categoryFilter,
+            isAuthenticated: true
         });
-    }
-});
-
-router.get("/admin/logout", (req, res) => {
-    req.session.destroy();
-    res.redirect("/admin/login");
-});
-
-// Product Routes
-router.get("/admin/products", authenticateAdmin, async (req, res) => {
-    try {
-        let products = await Product.find();
-        res.render("pages/Admin_Pages/products", { layout: "admin-layout.ejs", products });
     } catch (error) {
         res.status(500).send("Error loading products");
     }
 });
 
-router.get("/admin/products/create", authenticateAdmin, (req, res) => {
-    res.render("pages/Admin_Pages/create", { layout: "admin-layout.ejs" });
+router.get("/admin/products/create", requireAdmin, async (req, res) => {
+    try {
+        const categories = await Category.find();
+        res.render("pages/Admin_Pages/create", { 
+            layout: "admin-layout",
+            categories,
+            isAuthenticated: true
+        });
+    } catch (error) {
+        res.status(500).send("Error loading categories");
+    }
 });
 
-router.post("/admin/products/create", authenticateAdmin, upload.single("imageSrc"), async (req, res) => {
+router.post("/admin/products/create", requireAdmin, upload.single("image"), async (req, res) => {
     try {
-        let newProduct = new Product({
+        const newProduct = new Product({
             title: req.body.title,
             description: req.body.description,
             price: req.body.price,
             category: req.body.category,
-            isFeatured: Boolean(req.body.isFeatured),
-            imageSrc: req.file ? req.file.path : null // Handle uploaded image path
+            isFeatured: req.body.isFeatured === 'on',
+            imageSrc: req.file ? 'uploads/' + req.file.filename : '',
+            stock: req.body.stock || 0
         });
-        await newProduct.save();
-        return res.redirect("/admin/products");
-    } catch (error) {
-        res.status(500).send("Error creating product");
-    }
-});
 
-router.get("/admin/products/delete/:id", authenticateAdmin, async (req, res) => {
-    try {
-        await Product.findByIdAndDelete(req.params.id);
+        await newProduct.save();
         res.redirect("/admin/products");
     } catch (error) {
-        res.status(500).send("Error deleting product");
+        console.error('Error creating product:', error);
+        const categories = await Category.find();
+        res.render("pages/Admin_Pages/create", { 
+            layout: "admin-layout",
+            categories,
+            error: error.message || "Error creating product",
+            isAuthenticated: true
+        });
     }
 });
 
-router.get("/admin/products/edit/:id", authenticateAdmin, async (req, res) => {
+// Category Routes
+router.get("/admin/categories", requireAdmin, async (req, res) => {
     try {
-        let product = await Product.findById(req.params.id);
+        const categories = await Category.find().sort({ createdAt: -1 });
+        res.render("pages/Admin_Pages/categories", { 
+            layout: "admin-layout",
+            categories,
+            isAuthenticated: true
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        res.status(500).send("Error loading categories");
+    }
+});
+
+router.post("/admin/categories/create", requireAdmin, async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) {
+            throw new Error('Category name is required');
+        }
+
+        const newCategory = new Category({
+            name: name.trim(),
+            description: req.body.description || ''
+        });
+
+        await newCategory.save();
+        res.redirect("/admin/categories");
+    } catch (error) {
+        console.error('Error creating category:', error);
+        res.render("pages/Admin_Pages/categories", { 
+            layout: "admin-layout",
+            categories: await Category.find(),
+            error: error.message || "Error creating category",
+            isAuthenticated: true
+        });
+    }
+});
+
+// Add category edit route
+router.post("/admin/categories/edit/:id", requireAdmin, async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) {
+            throw new Error('Category name is required');
+        }
+
+        await Category.findByIdAndUpdate(req.params.id, {
+            name: name.trim(),
+            description: req.body.description || ''
+        });
+
+        res.redirect("/admin/categories");
+    } catch (error) {
+        console.error('Error updating category:', error);
+        res.status(500).send("Error updating category");
+    }
+});
+
+// Add category delete route
+router.get("/admin/categories/delete/:id", requireAdmin, async (req, res) => {
+    try {
+        await Category.findByIdAndDelete(req.params.id);
+        res.redirect("/admin/categories");
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        res.status(500).send("Error deleting category");
+    }
+});
+
+// Edit product route
+router.get("/admin/products/edit/:id", requireAdmin, async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        const categories = await Category.find();
         if (!product) {
             return res.status(404).send("Product not found");
         }
-        res.render("pages/Admin_Pages/edit-form", { layout: "admin-layout.ejs", product });
+        res.render("pages/Admin_Pages/edit-product", { 
+            layout: "admin-layout",
+            product,
+            categories,
+            isAuthenticated: true
+        });
     } catch (error) {
         res.status(500).send("Error loading product");
     }
 });
 
-router.post("/admin/products/edit/:id", authenticateAdmin, upload.single("imageSrc"), async (req, res) => {
+// Update product route
+router.post("/admin/products/edit/:id", requireAdmin, upload.single("image"), async (req, res) => {
     try {
-        let product = await Product.findById(req.params.id);
+        const product = await Product.findById(req.params.id);
         if (!product) {
             return res.status(404).send("Product not found");
         }
+
         product.title = req.body.title;
         product.description = req.body.description;
         product.price = req.body.price;
         product.category = req.body.category;
-        product.isFeatured = Boolean(req.body.isFeatured);
+        product.stock = req.body.stock || 0;
+        product.isFeatured = req.body.isFeatured === 'on';
 
-        // Update image if a new one is uploaded
         if (req.file) {
-            product.imageSrc = req.file.path;
+            product.imageSrc = 'uploads/' + req.file.filename;
         }
 
         await product.save();
@@ -150,69 +218,71 @@ router.post("/admin/products/edit/:id", authenticateAdmin, upload.single("imageS
     }
 });
 
-// Dashboard route
-router.get("/admin/dashboard", authenticateAdmin, (req, res) => {
-    res.render("pages/Admin_Pages/dashboard", { layout: "admin-layout.ejs" });
-});
-
-// Category Routes
-router.get("/admin/categories", authenticateAdmin, async (req, res) => {
+// Delete product route
+router.get("/admin/products/delete/:id", requireAdmin, async (req, res) => {
     try {
-        let categories = await Category.find();
-        res.render("pages/Admin_Pages/category", { layout: "admin-layout.ejs", categories });
+        await Product.findByIdAndDelete(req.params.id);
+        res.redirect("/admin/products");
     } catch (error) {
-        res.status(500).send("Error loading categories");
+        res.status(500).send("Error deleting product");
     }
 });
 
-router.get("/admin/categories/createCategory", (req, res) => {
-    res.render("pages/Admin_Pages/createCategory", { layout: "admin-layout.ejs" });
-});
-
-router.post("/admin/categories/create", authenticateAdmin, async (req, res) => {
+// API route for filtered products
+router.get("/api/products/filter", requireAdmin, async (req, res) => {
     try {
-        let newCategory = new Category({
-            category: req.body.category
-        });
-        await newCategory.save();
-        return res.redirect("/admin/categories");
-    } catch (error) {
-        res.status(500).send("Error creating category");
-    }
-});
+        const { search, sortBy, filter, category } = req.query;
+        let query = {};
 
-router.get("/admin/categories/delete/:id", authenticateAdmin, async (req, res) => {
-    try {
-        await Category.findByIdAndDelete(req.params.id);
-        res.redirect("/admin/categories");
-    } catch (error) {
-        res.status(500).send("Error deleting category");
-    }
-});
-
-router.get("/admin/categories/edit/:id", authenticateAdmin, async (req, res) => {
-    try {
-        let category = await Category.findById(req.params.id);
-        if (!category) {
-            return res.status(404).send("Category not found");
+        // Search filter
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
         }
-        res.render("pages/Admin_Pages/Edit-category", { layout: "admin-layout.ejs", category });
+
+        // Category filter
+        if (category) {
+            query.category = category;
+        }
+
+        // Status filter
+        if (filter === 'featured') {
+            query.isFeatured = true;
+        } else if (filter === 'low-stock') {
+            query.stock = { $lte: 10, $gt: 0 };
+        } else if (filter === 'out-stock') {
+            query.stock = 0;
+        }
+
+        // Sort configuration
+        let sort = {};
+        if (sortBy === 'price') {
+            sort.price = 1;
+        } else if (sortBy === '-price') {
+            sort.price = -1;
+        } else if (sortBy === 'stock') {
+            sort.stock = 1;
+        } else {
+            sort.createdAt = -1;
+        }
+
+        const products = await Product.find(query).sort(sort);
+        res.json(products);
     } catch (error) {
-        res.status(500).send("Error loading category");
+        res.status(500).json({ error: "Error fetching products" });
     }
 });
 
-router.post("/admin/categories/edit/:id", authenticateAdmin, async (req, res) => {
+// API route for updating stock
+router.post("/api/products/:id/stock", requireAdmin, async (req, res) => {
     try {
-        let category = await Category.findById(req.params.id);
-        if (!category) {
-            return res.status(404).send("Category not found");
-        }
-        category.category = req.body.category;
-        await category.save();
-        res.redirect("/admin/categories");
+        const { stock } = req.body;
+        await Product.findByIdAndUpdate(req.params.id, { stock });
+        res.json({ success: true });
     } catch (error) {
-        res.status(500).send("Error updating category");
+        res.status(500).json({ error: "Error updating stock" });
     }
 });
 

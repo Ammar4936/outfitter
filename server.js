@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
 const { isAuthenticated } = require('./middleware/auth.middleware');
+const { isAdmin } = require('./middleware/adminAuth.middleware');
 let app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -13,24 +14,32 @@ app.set("view engine", "ejs");
 
 // Static files
 app.use(express.static("public"));
+app.use('/uploads', express.static('uploads')); // Serve uploaded files
 
 // Session configuration
 const session = require('express-session');
 app.use(session({
-    secret: 'your-secret-key',
+    secret: 'authentication',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
 }));
 
 // Apply authentication middleware
 app.use(isAuthenticated);
+app.use(isAdmin);
 
 // Routes
-let productsRouter = require("./routes/admin/products.router");
 let userRouter = require("./routes/user.router");
+let adminRouter = require("./routes/admin/auth.router");
+let productsRouter = require("./routes/admin/products.router");
+let shopRouter = require("./routes/products.router");
 app.use(userRouter);
+app.use(adminRouter);
 app.use(productsRouter);
+app.use(shopRouter);
 
 // MongoDB connection
 const mongoose = require("mongoose");
@@ -47,7 +56,8 @@ mongoose.connect(connectionstring)
 app.get("/", (req, res) => {
     res.render("pages/Main_Site_pages/landingPage", { 
         layout: false,
-        isAuthenticated: res.locals.isAuthenticated 
+        isAuthenticated: res.locals.isAuthenticated,
+        isAdmin: res.locals.isAdmin
     });
 });
 
